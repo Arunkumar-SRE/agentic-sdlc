@@ -1,0 +1,56 @@
+{
+  "original": "Build a scalable URL shortener service with APIs, persistence, and analytics.",
+  "change_type": "greenfield",
+  "intent": "feature",
+  "clarity": "well_defined",
+  "normalized": "Greenfield feature: Expose REST APIs to create and query short links; Redirect short codes to long URLs with correct 404/410 semantics; Persist links and click events durably; Record and expose click analytics; Design for horizontal scalability.",
+  "goals": [
+    "Expose REST APIs to create and query short links",
+    "Redirect short codes to long URLs with correct 404/410 semantics",
+    "Persist links and click events durably",
+    "Record and expose click analytics",
+    "Design for horizontal scalability"
+  ],
+  "acceptance_criteria": [
+    "POST /api/v1/urls returns 201 with a short_code; malformed or non-http(s) URLs return 422",
+    "GET /{code} returns 302 to the long URL; unknown code returns 404",
+    "Links and clicks are stored in a relational database with a UNIQUE short_code",
+    "GET /api/v1/urls/{code}/analytics reports total clicks, last access, clicks by day and top referrers",
+    "API is stateless; lookups use an indexed unique key; the path to Postgres, caching and async analytics is documented"
+  ],
+  "ambiguities": [
+    {
+      "topic": "scale target",
+      "question": "What load must it sustain (peak redirects/sec, total links, retention)?",
+      "assumption": "~1K redirects/sec peak and ~10M links; stateless API behind a load balancer; PostgreSQL in production"
+    },
+    {
+      "topic": "analytics dimensions",
+      "question": "Which analytics: totals, referrers, geo, devices, time series?",
+      "assumption": "Total clicks, last access, recent clicks, clicks per day and top referrers; no geo or device data"
+    },
+    {
+      "topic": "datastore",
+      "question": "Which datastore and durability guarantees?",
+      "assumption": "SQLite behind SQLAlchemy for the prototype; PostgreSQL is the production target"
+    }
+  ],
+  "assumptions": [
+    "~1K redirects/sec peak and ~10M links; stateless API behind a load balancer; PostgreSQL in production",
+    "Total clicks, last access, recent clicks, clicks per day and top referrers; no geo or device data",
+    "SQLite behind SQLAlchemy for the prototype; PostgreSQL is the production target",
+    "Single region",
+    "No authentication in the prototype; creation is rate-limited"
+  ],
+  "out_of_scope": [
+    "Authentication and multi-tenancy",
+    "Malicious-URL scanning",
+    "Custom domains"
+  ],
+  "keywords": [
+    "scalable",
+    "persistence",
+    "analytics"
+  ],
+  "confidence": 0.64
+}

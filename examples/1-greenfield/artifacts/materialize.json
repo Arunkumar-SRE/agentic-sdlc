@@ -1,0 +1,23 @@
+{
+  "project_dir": "project",
+  "written": [
+    "README.md",
+    "app/__init__.py",
+    "app/database.py",
+    "app/main.py",
+    "app/metrics.py",
+    "app/models.py",
+    "app/ops.py",
+    "app/ratelimit.py",
+    "app/schemas.py",
+    "app/services.py",
+    "requirements.txt",
+    "tests/__init__.py",
+    "tests/conftest.py",
+    "tests/test_api.py",
+    "tests/test_contract.py"
+  ],
+  "edited": [],
+  "base": null,
+  "problems": []
+}

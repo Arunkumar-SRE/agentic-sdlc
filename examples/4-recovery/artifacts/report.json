@@ -1,0 +1,13 @@
+{
+  "path": "artifacts/engineering_summary.md",
+  "artifacts": [
+    "artifacts/design.md",
+    "artifacts/openapi.json",
+    "artifacts/schema.sql",
+    "artifacts/test_plan.md",
+    "artifacts/risk_register.md",
+    "artifacts/verification.md",
+    "artifacts/engineering_summary.md"
+  ],
+  "verdict": "ready_for_review"
+}

@@ -1,0 +1,120 @@
+{
+  "summary": "Stateless FastAPI service over a relational store: a create path, a hot redirect path that records clicks best-effort, and an analytics read path, with health, readiness, metrics and rate limiting built in.",
+  "components": [
+    "FastAPI app (stateless, horizontally scalable)",
+    "Service layer (framework-free, domain errors)",
+    "SQLAlchemy persistence (SQLite prototype / PostgreSQL production)",
+    "Observability middleware (request id, JSON access log, Prometheus metrics and latency histogram)",
+    "Golden signals and SLO evaluation (/ops/golden-signals, live /ops/dashboard)",
+    "Per-client fixed-window rate limiter"
+  ],
+  "endpoints": [
+    {
+      "method": "POST",
+      "path": "/api/v1/urls",
+      "purpose": "Create a short URL (optional alias, expiry)"
+    },
+    {
+      "method": "GET",
+      "path": "/{short_code}",
+      "purpose": "302 redirect and record a click; 404 unknown, 410 expired"
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/urls/{short_code}/analytics",
+      "purpose": "Click analytics"
+    },
+    {
+      "method": "GET",
+      "path": "/health",
+      "purpose": "Liveness"
+    },
+    {
+      "method": "GET",
+      "path": "/ready",
+      "purpose": "Readiness (database reachable)"
+    },
+    {
+      "method": "GET",
+      "path": "/metrics",
+      "purpose": "Prometheus metrics"
+    },
+    {
+      "method": "GET",
+      "path": "/ops/golden-signals",
+      "purpose": "Latency, traffic, errors, saturation and SLO status"
+    }
+  ],
+  "data_model": {
+    "urls": [
+      "id PK",
+      "short_code VARCHAR(16) UNIQUE INDEX",
+      "long_url TEXT",
+      "created_at",
+      "expires_at NULL"
+    ],
+    "clicks": [
+      "id PK",
+      "url_id FK",
+      "clicked_at",
+      "referrer NULL",
+      "user_agent NULL",
+      "INDEX(url_id, clicked_at)"
+    ]
+  },
+  "decisions": [
+    {
+      "decision": "Random 7-char base62 codes",
+      "rationale": "62^7 ~ 3.5e12 space, no coordination between replicas, unguessable",
+      "alternative": "Counter + base62 (predictable, needs a coordinated sequence) or URL hash (collision/dedupe semantics)"
+    },
+    {
+      "decision": "Insert relying on the UNIQUE constraint, retry on conflict",
+      "rationale": "Race-safe; check-then-insert has a TOCTOU window",
+      "alternative": "SELECT then INSERT"
+    },
+    {
+      "decision": "302 with Cache-Control: no-store",
+      "rationale": "Every hit reaches the service, so analytics stay accurate",
+      "alternative": "301 (cacheable and faster, but hides repeat hits)"
+    },
+    {
+      "decision": "Click writes synchronous but best-effort",
+      "rationale": "A failed click write is metered and logged but never fails the redirect",
+      "alternative": "Queue + batch consumer (needed above ~1K writes/sec)"
+    },
+    {
+      "decision": "SQLite for the prototype, PostgreSQL for production",
+      "rationale": "Zero-setup demo; SQLAlchemy makes it a DATABASE_URL change",
+      "alternative": "Start on Postgres (heavier setup)"
+    },
+    {
+      "decision": "Domain errors in the service layer, mapped to HTTP at the edge",
+      "rationale": "Business logic testable without the web framework",
+      "alternative": "HTTPException inside services"
+    }
+  ],
+  "tradeoffs": [
+    "Analytics consistency vs redirect availability: availability wins",
+    "Synchronous click writes (simple) vs queued writes (throughput): simple for the prototype",
+    "In-memory rate limiter is per-process: correct for one replica; use Redis or the gateway for many",
+    "Random codes need collision retries; counters would not, but they couple replicas"
+  ],
+  "scaling_path": [
+    "Scale API replicas behind a load balancer",
+    "PostgreSQL with read replicas and PgBouncer",
+    "Redis read-through cache for hot code -> URL",
+    "Queue + batch writer for clicks; time-partitioned clicks table",
+    "Rate limiting at the gateway (Redis)",
+    "Multi-region with per-region caches"
+  ],
+  "slos": [
+    "Redirect availability 99.9% over 30 days",
+    "Redirect p99 < 100 ms server-side",
+    "Create success rate 99.5% excluding 4xx",
+    "Click-write loss < 0.1% of redirects"
+  ],
+  "change_plan": [
+    "Backward compatibility: new request fields optional, no existing field changed; verified by the old suite"
+  ]
+}

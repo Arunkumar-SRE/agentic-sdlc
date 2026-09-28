@@ -1,0 +1,12 @@
+{
+  "files": [
+    {
+      "path": "docs/SERVICE.md",
+      "content": "# URL shortener (generated)\n\nStateless FastAPI service over a relational store: a create path, a hot redirect path that records clicks best-effort, and an analytics read path, with health, readiness, metrics and rate limiting built in.\n\n## Run\n\n```bash\npip install -r requirements.txt\nuvicorn app.main:app --reload   # http://127.0.0.1:8000/docs\npytest -q\n```\n\n## API\n\n| Method | Path | Purpose |\n|---|---|---|\n| POST | `/api/v1/urls` | Create a short URL (optional alias, expiry, max_clicks) |\n| GET | `/{short_code}` | 302 redirect and record a click; 404 unknown, 410 expired or exhausted |\n| GET | `/api/v1/urls/{short_code}/analytics` | Click analytics |\n| GET | `/health` | Liveness |\n| GET | `/ready` | Readiness (database reachable) |\n| GET | `/metrics` | Prometheus metrics |\n| GET | `/ops/golden-signals` | Latency, traffic, errors, saturation and SLO status |\n\nConfiguration: `DATABASE_URL` (default SQLite file; PostgreSQL URL in production), `RATE_LIMIT_PER_MIN` (0 disables).\n"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "content": "# Changelog\n\n## Unreleased\n\nBrownfield feature: Redirect short codes to long URLs with correct 404/410 semantics; Record and expose click analytics; Enforce a per-link click limit.\n\n- app/ops.py (route layer): identifiers match click, redirect (score 12.21); symbols: chaos_before_redirect\n- app/services.py (business logic): identifiers match analytic, click, redirect (score 11.54); symbols: get_analytics, record_click\n- app/main.py (route layer): identifiers match analytic, redirect (score 8.64); symbols: analytics, redirect\n- app/schemas.py (schema / DTO): identifiers match analytic, click (score 6.49); symbols: AnalyticsResponse, ClickEvent\n- app/models.py (data model): identifiers match click (score 4.43); symbols: Click\n- models.URL: add max_clicks INTEGER NULL and click_count INTEGER NOT NULL DEFAULT 0\n- schemas: URLCreate.max_clicks (optional, >= 1); URLResponse.max_clicks; AnalyticsResponse.max_clicks/remaining_clicks\n- services.resolve_url: consume one click with a conditional UPDATE (click_count < max_clicks); 0 rows -> 410 LinkExhausted\n- services.get_analytics: report max_clicks and remaining_clicks\n- Backward compatibility: new request fields optional, no existing field changed; verified by the old suite\n"
+    }
+  ]
+}

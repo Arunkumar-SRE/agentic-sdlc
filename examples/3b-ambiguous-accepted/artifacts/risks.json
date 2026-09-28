@@ -1,0 +1,114 @@
+{
+  "risks": [
+    {
+      "name": "Short-code collision",
+      "likelihood": "low",
+      "impact": "medium",
+      "mitigation": "UNIQUE constraint + up to 5 retries, then 503; collision counter metric",
+      "status": "verified_by_test"
+    },
+    {
+      "name": "Analytics failure breaks redirects",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Click write isolated; click_write_failures_total metric",
+      "status": "verified_by_test"
+    },
+    {
+      "name": "Timezone bug on expiry",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "Normalise to naive UTC at the schema boundary; reject past expiry",
+      "status": "verified_by_test"
+    },
+    {
+      "name": "Alias shadows a route (e.g. /docs)",
+      "likelihood": "medium",
+      "impact": "medium",
+      "mitigation": "Reserved alias list; alias charset excludes dots and slashes",
+      "status": "verified_by_test"
+    },
+    {
+      "name": "Creation floods / abuse",
+      "likelihood": "high",
+      "impact": "medium",
+      "mitigation": "Per-client rate limit (429); auth and URL scanning are documented next steps",
+      "status": "verified_by_test"
+    },
+    {
+      "name": "Hot links overload the database",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Read-through Redis cache for code -> URL; CDN for very hot links",
+      "status": "documented"
+    },
+    {
+      "name": "Analytics write amplification",
+      "likelihood": "high",
+      "impact": "medium",
+      "mitigation": "Queue + batch inserts, pre-aggregated counters, time-partitioned clicks",
+      "status": "documented"
+    },
+    {
+      "name": "SQLite single-writer limit",
+      "likelihood": "high",
+      "impact": "low",
+      "mitigation": "Accepted for the prototype; PostgreSQL in production",
+      "status": "accepted"
+    },
+    {
+      "name": "Generated code merged without review",
+      "likelihood": "medium",
+      "impact": "high",
+      "mitigation": "Sandboxed workspace, verification gate and human sign-off before merge",
+      "status": "mitigated_in_code"
+    }
+  ],
+  "failure_scenarios": [
+    {
+      "scenario": "Database unavailable",
+      "detection": "/ready returns 503; 5xx rate",
+      "behaviour": "Fail fast; liveness stays green"
+    },
+    {
+      "scenario": "Click insert fails",
+      "detection": "click_write_failures_total > 0",
+      "behaviour": "Redirect still served; click lost and logged"
+    },
+    {
+      "scenario": "Collision storm",
+      "detection": "short_code_collisions_total spikes",
+      "behaviour": "Retries, then 503 so clients back off"
+    },
+    {
+      "scenario": "Create flood from one client",
+      "detection": "rate_limited_total",
+      "behaviour": "429 for that client only"
+    },
+    {
+      "scenario": "Model returns invalid output",
+      "detection": "Schema validation in the router",
+      "behaviour": "Rejected; retried with the error; fallback or halt"
+    },
+    {
+      "scenario": "Generated code fails verification",
+      "detection": "verify step",
+      "behaviour": "Feedback loop re-opens code generation (bounded rounds)"
+    }
+  ],
+  "validation_strategy": [
+    "edits_applied: all edits applied",
+    "lint: 13 files, 0 blocking issue(s) [compile + ruff]",
+    "contract: served API matches the contract",
+    "tests: 14 tests, 0 failed, 0 errors",
+    "Tests are generated from the contract, independently of the code, so they are not shaped by its bugs",
+    "Contract drift is checked against the OpenAPI the generated service actually serves",
+    "Repair loop: 0 round(s) used this run (max 2) before the result reached review",
+    "Human gates on requirement interpretation, plan, and final sign-off",
+    "Live smoke test before merge: uvicorn + curl create/redirect/analytics"
+  ],
+  "limitations": [
+    "Prototype: SQLite, in-process rate limiter and metrics, no auth, no migrations tool",
+    "Offline reference provider: deterministic rules and a curated reference implementation; real synthesis needs a model provider"
+  ]
+}

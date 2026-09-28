@@ -1,0 +1,118 @@
+{
+  "template": "brownfield-feature",
+  "rationale": "Impact first: changes are scoped by static analysis of the existing code, applied as exact edits to a copy of the repository, and accepted only if the pre-existing suite still passes alongside the new tests.",
+  "tasks": [
+    {
+      "id": "B1",
+      "title": "Impact analysis of the existing code",
+      "owner_step": "impact",
+      "depends_on": [],
+      "deliverable": "Impacted modules, flows, tests",
+      "acceptance": "Every impacted route has a flow"
+    },
+    {
+      "id": "B2",
+      "title": "Change design (backward compatible)",
+      "owner_step": "design",
+      "depends_on": [
+        "B1"
+      ],
+      "deliverable": "Per-module change plan",
+      "acceptance": "No existing field removed or renamed"
+    },
+    {
+      "id": "B3",
+      "title": "Contract and schema delta",
+      "owner_step": "contract",
+      "depends_on": [
+        "B2"
+      ],
+      "deliverable": "OpenAPI + DDL with the new fields",
+      "acceptance": "New fields optional"
+    },
+    {
+      "id": "B4",
+      "title": "Targeted code edits",
+      "owner_step": "codegen",
+      "depends_on": [
+        "B3"
+      ],
+      "deliverable": "Exact edits to impacted modules",
+      "acceptance": "All edits apply cleanly"
+    },
+    {
+      "id": "B5",
+      "title": "Regression + new behaviour tests",
+      "owner_step": "testgen",
+      "depends_on": [
+        "B3"
+      ],
+      "deliverable": "New pytest cases",
+      "acceptance": "New behaviour covered"
+    },
+    {
+      "id": "B6",
+      "title": "Full regression, contract and lint",
+      "owner_step": "verify",
+      "depends_on": [
+        "B4",
+        "B5"
+      ],
+      "deliverable": "Verification report",
+      "acceptance": "Old and new tests pass"
+    },
+    {
+      "id": "B7",
+      "title": "Risk review",
+      "owner_step": "risks",
+      "depends_on": [
+        "B6"
+      ],
+      "deliverable": "Risk register",
+      "acceptance": "Migration and concurrency risks addressed"
+    },
+    {
+      "id": "B8",
+      "title": "Changelog and summary",
+      "owner_step": "report",
+      "depends_on": [
+        "B7"
+      ],
+      "deliverable": "Engineering summary",
+      "acceptance": "Reviewer approves"
+    }
+  ],
+  "execution_levels": [
+    [
+      "B1"
+    ],
+    [
+      "B2"
+    ],
+    [
+      "B3"
+    ],
+    [
+      "B4",
+      "B5"
+    ],
+    [
+      "B6"
+    ],
+    [
+      "B7"
+    ],
+    [
+      "B8"
+    ]
+  ],
+  "critical_path": [
+    "B1",
+    "B2",
+    "B3",
+    "B4",
+    "B6",
+    "B7",
+    "B8"
+  ]
+}

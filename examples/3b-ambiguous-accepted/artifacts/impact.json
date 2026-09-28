@@ -1,0 +1,116 @@
+{
+  "applicable": true,
+  "summary": "Scanned 9 modules, 10 routes, 2 ORM models. 0 module(s) impacted; 0 test file(s) to update.",
+  "impacted_modules": [],
+  "flows": [
+    {
+      "entrypoint": "GET /",
+      "chain": [
+        "main.root"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /favicon.ico",
+      "chain": [
+        "main.favicon"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /health",
+      "chain": [
+        "main.health"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /ready",
+      "chain": [
+        "main.ready"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /metrics",
+      "chain": [
+        "main.prometheus_metrics",
+        "metrics.render"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "POST /api/v1/urls",
+      "chain": [
+        "main.create_url",
+        "services.create_short_url",
+        "services.generate_code",
+        "metrics.inc",
+        "metrics._fmt"
+      ],
+      "models": [
+        "models.URL(urls)"
+      ]
+    },
+    {
+      "entrypoint": "GET /api/v1/urls/{short_code}/analytics",
+      "chain": [
+        "main.analytics",
+        "services.get_analytics",
+        "services._get_url"
+      ],
+      "models": [
+        "models.Click(clicks)",
+        "models.URL(urls)"
+      ]
+    },
+    {
+      "entrypoint": "GET /{short_code}",
+      "chain": [
+        "main.redirect",
+        "ops.chaos_before_redirect",
+        "services.resolve_url",
+        "services._get_url",
+        "metrics.inc",
+        "models.utcnow",
+        "services.record_click",
+        "metrics._fmt"
+      ],
+      "models": [
+        "models.Click(clicks)",
+        "models.URL(urls)"
+      ]
+    },
+    {
+      "entrypoint": "GET /ops/golden-signals",
+      "chain": [
+        "ops.golden_signals_endpoint",
+        "ops.golden_signals",
+        "ops._budget",
+        "ops._latency",
+        "ops._pool",
+        "metrics.counter",
+        "metrics.in_flight",
+        "metrics.uptime_seconds",
+        "metrics.window",
+        "ops._percentile"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /ops/dashboard",
+      "chain": [
+        "ops.dashboard"
+      ],
+      "models": []
+    }
+  ],
+  "data_flow_notes": [
+    "Redirect path: route -> services.resolve_url -> services.record_click (click insert is best-effort)",
+    "Create path: route -> services.create_short_url (UNIQUE constraint + retry, no check-then-insert)"
+  ],
+  "tests_to_update": [],
+  "risks": [
+    "Schema change on urls needs a migration for existing rows (nullable / server default)"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "original": "Build a todo list REST API where users can create tasks with due dates, mark them done, and list overdue tasks.",
+  "change_type": "greenfield",
+  "intent": "feature",
+  "clarity": "well_defined",
+  "normalized": "Build a todo list REST API where users can create tasks with due dates, mark them done, and list overdue tasks.",
+  "goals": [
+    "Deliver: Build a todo list REST API where users can create tasks with due dates, mark them done, and list overdue tasks."
+  ],
+  "acceptance_criteria": [
+    "Acceptance criteria to be derived by a model provider for this domain"
+  ],
+  "ambiguities": [
+    {
+      "topic": "domain",
+      "question": "The offline reference provider has no domain knowledge for this requirement.",
+      "assumption": "Design and build need a real model provider (--provider anthropic)"
+    }
+  ],
+  "assumptions": [
+    "Design and build need a real model provider (--provider anthropic)"
+  ],
+  "out_of_scope": [],
+  "keywords": [],
+  "confidence": 0.98
+}

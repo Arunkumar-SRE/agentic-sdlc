@@ -1,0 +1,29 @@
+2026-09-28T15:28:13.850196Z [info     ] run_started                    engine=simple provider='per-tier config' resume=False run_id=ex-5-out-of-domain workflow=sdlc
+2026-09-28T15:28:13.854548Z [info     ] step_started                   round=0 run_id=ex-5-out-of-domain step=requirements
+2026-09-28T15:28:13.864777Z [info     ] step_succeeded                 attempts=1 run_id=ex-5-out-of-domain seconds=0.01 step=requirements
+2026-09-28T15:28:13.864936Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-5-out-of-domain step=requirements
+2026-09-28T15:28:13.865454Z [info     ] step_skipped                   condition={'path': 'requirements.change_type', 'in': ['brownfield'], 'negate': False} run_id=ex-5-out-of-domain step=impact
+2026-09-28T15:28:13.866027Z [info     ] step_started                   round=0 run_id=ex-5-out-of-domain step=plan
+2026-09-28T15:28:13.868674Z [info     ] step_succeeded                 attempts=1 run_id=ex-5-out-of-domain seconds=0.0 step=plan
+2026-09-28T15:28:13.868904Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-5-out-of-domain step=plan
+2026-09-28T15:28:13.869618Z [info     ] step_started                   round=0 run_id=ex-5-out-of-domain step=design
+2026-09-28T15:28:13.871713Z [error    ] step_failed                    attempts=1 error='UnsupportedByProvider: the offline reference provider only has domain knowledge for URL shorteners, so it cannot design or build this requirement. Re-run with a real model: --provider anthropic (needs ANTHROPIC_API_KEY). Requirement analysis and planning above are still valid.' run_id=ex-5-out-of-domain step=design
+2026-09-28T15:28:13.871830Z [error    ] run_halted                     reason='design: UnsupportedByProvider: the offline reference provider only has domain knowledge for URL shorteners, so it cannot design or build this requirement. Re-run with a real model: --provider anthropic (needs ANTHROPIC_API_KEY). Requirement analysis and planning above are still valid.' run_id=ex-5-out-of-domain status=failed
+2026-09-28T15:28:13.872804Z [info     ] run_finished                   reason='design: UnsupportedByProvider: the offline reference provider only has domain knowledge for URL shorteners, so it cannot design or build this requirement. Re-run with a real model: --provider anthropic (needs ANTHROPIC_API_KEY). Requirement analysis and planning above are still valid.' run_id=ex-5-out-of-domain status=failed
+
+run ex-5-out-of-domain: FAILED (design: UnsupportedByProvider: the offline reference provider only has domain knowledge for URL shorteners, so it cannot design or build this requirement. Re-run with a real model: --provider anthropic (needs ANTHROPIC_API_KEY). Requirement analysis and planning above are still valid.)
+  requirements succeeded  attempts=1
+  impact       skipped    attempts=0
+  plan         succeeded  attempts=1
+  design       failed     attempts=1  UnsupportedByProvider: the offline reference provider only has domain knowledge for URL sh
+  contract     pending    attempts=0
+  codegen      pending    attempts=0
+  testgen      pending    attempts=0
+  docs         pending    attempts=0
+  materialize  pending    attempts=0
+  verify       pending    attempts=0
+  risks        pending    attempts=0
+  report       pending    attempts=0
+usage: 3 model calls (0 cached), 0 tool calls, 0.03 s
+workspace: workspace/ex-5-out-of-domain
+exit code: 1

@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "path": "README.md",
+      "content": "# URL shortener (generated)\n\nStateless FastAPI service over a relational store: a create path, a hot redirect path that records clicks best-effort, and an analytics read path, with health, readiness, metrics and rate limiting built in.\n\n## Run\n\n```bash\npip install -r requirements.txt\nuvicorn app.main:app --reload   # http://127.0.0.1:8000/docs\npytest -q\n```\n\n## API\n\n| Method | Path | Purpose |\n|---|---|---|\n| POST | `/api/v1/urls` | Create a short URL (optional alias, expiry) |\n| GET | `/{short_code}` | 302 redirect and record a click; 404 unknown, 410 expired |\n| GET | `/api/v1/urls/{short_code}/analytics` | Click analytics |\n| GET | `/health` | Liveness |\n| GET | `/ready` | Readiness (database reachable) |\n| GET | `/metrics` | Prometheus metrics |\n| GET | `/ops/golden-signals` | Latency, traffic, errors, saturation and SLO status |\n\nConfiguration: `DATABASE_URL` (default SQLite file; PostgreSQL URL in production), `RATE_LIMIT_PER_MIN` (0 disables).\n"
+    }
+  ]
+}

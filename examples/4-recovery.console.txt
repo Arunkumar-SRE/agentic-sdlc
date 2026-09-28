@@ -1,0 +1,61 @@
+2026-09-28T15:28:06.483012Z [info     ] run_started                    engine=simple provider='per-tier config' resume=False run_id=ex-4-recovery workflow=sdlc
+2026-09-28T15:28:06.487871Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=requirements
+2026-09-28T15:28:06.504287Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.02 step=requirements
+2026-09-28T15:28:06.504481Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-4-recovery step=requirements
+2026-09-28T15:28:06.505078Z [info     ] step_skipped                   condition={'path': 'requirements.change_type', 'in': ['brownfield'], 'negate': False} run_id=ex-4-recovery step=impact
+2026-09-28T15:28:06.505728Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=plan
+2026-09-28T15:28:06.508620Z [warning  ] step_retry                     attempt=1 backoff_s=0.5 error='TaskPlan validation failed: template: Field required; rationale: Field required; tasks: Field required' run_id=ex-4-recovery step=plan
+2026-09-28T15:28:07.012029Z [info     ] step_succeeded                 attempts=2 run_id=ex-4-recovery seconds=0.5 step=plan
+2026-09-28T15:28:07.012450Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-4-recovery step=plan
+2026-09-28T15:28:07.013878Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=design
+2026-09-28T15:28:07.014156Z [warning  ] step_retry                     attempt=1 backoff_s=0.5 error='injected transient fault' run_id=ex-4-recovery step=design
+2026-09-28T15:28:07.514548Z [warning  ] step_retry                     attempt=2 backoff_s=1.0 error='injected transient fault' run_id=ex-4-recovery step=design
+2026-09-28T15:28:08.519082Z [info     ] step_succeeded                 attempts=3 run_id=ex-4-recovery seconds=1.5 step=design
+2026-09-28T15:28:08.520243Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=contract
+2026-09-28T15:28:08.522899Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.0 step=contract
+2026-09-28T15:28:08.524092Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=codegen
+2026-09-28T15:28:08.529179Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=testgen
+2026-09-28T15:28:08.532045Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=docs
+2026-09-28T15:28:08.536750Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.0 step=docs
+2026-09-28T15:28:08.545735Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.01 step=testgen
+2026-09-28T15:28:08.546919Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.02 step=codegen
+2026-09-28T15:28:08.548358Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=materialize
+2026-09-28T15:28:08.551430Z [info     ] tool_call                      agent=materialize ms=2.6 run_id=ex-4-recovery side_effects=write tool=materialize
+2026-09-28T15:28:08.551985Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.0 step=materialize
+2026-09-28T15:28:08.553382Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=verify
+2026-09-28T15:28:11.092424Z [info     ] tool_call                      agent=verify ms=2538.6 run_id=ex-4-recovery side_effects=exec tool=verify
+2026-09-28T15:28:11.093447Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=2.54 step=verify
+2026-09-28T15:28:11.095448Z [warning  ] feedback_loop                  reopened=['codegen', 'materialize', 'report', 'risks', 'verify'] round=1 run_id=ex-4-recovery step=verify target=codegen
+2026-09-28T15:28:11.097792Z [info     ] step_started                   round=1 run_id=ex-4-recovery step=codegen
+2026-09-28T15:28:11.107831Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.01 step=codegen
+2026-09-28T15:28:11.109900Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=materialize
+2026-09-28T15:28:11.113428Z [info     ] tool_call                      agent=materialize ms=3.0 run_id=ex-4-recovery side_effects=write tool=materialize
+2026-09-28T15:28:11.114174Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.0 step=materialize
+2026-09-28T15:28:11.115990Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=verify
+2026-09-28T15:28:13.511065Z [info     ] tool_call                      agent=verify ms=2394.7 run_id=ex-4-recovery side_effects=exec tool=verify
+2026-09-28T15:28:13.512246Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=2.4 step=verify
+2026-09-28T15:28:13.513970Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=risks
+2026-09-28T15:28:13.516888Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.0 step=risks
+2026-09-28T15:28:13.518717Z [info     ] step_started                   round=0 run_id=ex-4-recovery step=report
+2026-09-28T15:28:13.522833Z [info     ] tool_call                      agent=report ms=3.6 run_id=ex-4-recovery side_effects=write tool=render_report
+2026-09-28T15:28:13.523503Z [info     ] step_succeeded                 attempts=1 run_id=ex-4-recovery seconds=0.0 step=report
+2026-09-28T15:28:13.523622Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-4-recovery step=report
+2026-09-28T15:28:13.525554Z [info     ] run_finished                   reason=None run_id=ex-4-recovery status=succeeded
+
+run ex-4-recovery: SUCCEEDED
+  requirements succeeded  attempts=1
+  impact       skipped    attempts=0
+  plan         succeeded  attempts=2
+  design       succeeded  attempts=3
+  contract     succeeded  attempts=1
+  codegen      succeeded  attempts=2 rounds=1
+  testgen      succeeded  attempts=1
+  docs         succeeded  attempts=1
+  materialize  succeeded  attempts=2
+  verify       succeeded  attempts=2
+  risks        succeeded  attempts=1
+  report       succeeded  attempts=1
+usage: 10 model calls (0 cached), 5 tool calls, 7.05 s
+workspace: workspace/ex-4-recovery
+summary:   workspace/ex-4-recovery/artifacts/engineering_summary.md
+exit code: 0

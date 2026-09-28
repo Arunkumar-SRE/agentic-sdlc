@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "checks": {
+    "edits_applied": {
+      "passed": true,
+      "summary": "all edits applied",
+      "details": {
+        "problems": []
+      }
+    },
+    "lint": {
+      "passed": true,
+      "summary": "14 files, 0 blocking issue(s) [compile + ruff]",
+      "details": {
+        "issues": []
+      }
+    },
+    "contract": {
+      "passed": true,
+      "summary": "served API matches the contract",
+      "details": {
+        "missing_operations": [],
+        "missing_request_fields": [],
+        "undocumented_operations": []
+      }
+    },
+    "tests": {
+      "passed": true,
+      "summary": "18 tests, 0 failed, 0 errors",
+      "details": {
+        "total": 18,
+        "failed": 0,
+        "errors": 0,
+        "skipped": 0,
+        "failures": [],
+        "exit_code": 0,
+        "tail": [
+          "..................                                                       [100%]",
+          "18 passed in 0.55s"
+        ]
+      }
+    }
+  },
+  "feedback": "",
+  "environment_error": null
+}

@@ -1,0 +1,44 @@
+{
+  "original": "Enhance the existing URL shortener: add a max_clicks limit per link; once reached, redirects return 410 and analytics report remaining clicks.",
+  "change_type": "brownfield",
+  "intent": "feature",
+  "clarity": "well_defined",
+  "normalized": "Brownfield feature: Redirect short codes to long URLs with correct 404/410 semantics; Record and expose click analytics; Enforce a per-link click limit.",
+  "goals": [
+    "Redirect short codes to long URLs with correct 404/410 semantics",
+    "Record and expose click analytics",
+    "Enforce a per-link click limit"
+  ],
+  "acceptance_criteria": [
+    "GET /{code} returns 302 to the long URL; unknown code returns 404",
+    "GET /api/v1/urls/{code}/analytics reports total clicks, last access, clicks by day and top referrers",
+    "A link with max_clicks=N redirects N times, then returns 410; analytics shows remaining clicks",
+    "All pre-existing tests still pass (no regression) and existing API fields are unchanged"
+  ],
+  "ambiguities": [
+    {
+      "topic": "limit defaults",
+      "question": "What is the default, and what happens when the limit is unset?",
+      "assumption": "Unset means unlimited (backward compatible); an exhausted link returns 410"
+    }
+  ],
+  "assumptions": [
+    "Unset means unlimited (backward compatible); an exhausted link returns 410",
+    "Single region",
+    "No authentication in the prototype; creation is rate-limited"
+  ],
+  "out_of_scope": [
+    "Authentication and multi-tenancy",
+    "Malicious-URL scanning",
+    "Custom domains"
+  ],
+  "keywords": [
+    "max_clicks",
+    "limit",
+    "redirects",
+    "analytics",
+    "remaining",
+    "clicks"
+  ],
+  "confidence": 0.88
+}

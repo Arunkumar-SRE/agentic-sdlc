@@ -1,0 +1,105 @@
+--- a/app/models.py
++++ b/app/models.py
+@@ -19,6 +19,8 @@
+     long_url = Column(Text, nullable=False)
+     created_at = Column(DateTime, default=utcnow, nullable=False)
+     expires_at = Column(DateTime, nullable=True)
++    max_clicks = Column(Integer, nullable=True)  # NULL = unlimited
++    click_count = Column(Integer, nullable=False, default=0, server_default="0")
+ 
+     clicks = relationship("Click", back_populates="url", cascade="all, delete-orphan")
+ 
+--- a/app/schemas.py
++++ b/app/schemas.py
+@@ -10,6 +10,7 @@
+     long_url: HttpUrl
+     custom_alias: Optional[str] = Field(None, min_length=3, max_length=16, pattern=r"^[A-Za-z0-9_-]+$")
+     expires_at: Optional[datetime] = Field(None, description="ISO-8601; must be in the future. Naive values are treated as UTC.")
++    max_clicks: Optional[int] = Field(None, ge=1, description="Redirect limit; unset means unlimited.")
+ 
+     @field_validator("expires_at")
+     @classmethod
+@@ -29,6 +30,7 @@
+     long_url: str
+     created_at: datetime
+     expires_at: Optional[datetime] = None
++    max_clicks: Optional[int] = None
+ 
+ 
+ class ClickEvent(BaseModel):
+@@ -54,6 +56,8 @@
+     created_at: datetime
+     expires_at: Optional[datetime] = None
+     last_accessed: Optional[datetime] = None
++    max_clicks: Optional[int] = None
++    remaining_clicks: Optional[int] = None
+     recent_clicks: List[ClickEvent] = []
+     clicks_by_day: List[DayCount] = []
+     top_referrers: List[ReferrerCount] = []
+--- a/app/services.py
++++ b/app/services.py
+@@ -4,7 +4,7 @@
+ import string
+ from typing import Optional
+ 
+-from sqlalchemy import desc, func, select
++from sqlalchemy import desc, func, select, update
+ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+ from sqlalchemy.orm import Session
+ 
+@@ -40,6 +40,10 @@
+     status_code, detail = 410, "Short URL expired"
+ 
+ 
++class LinkExhausted(ServiceError):
++    status_code, detail = 410, "Short URL click limit reached"
++
++
+ class CodeGenerationExhausted(ServiceError):
+     status_code, detail = 503, "Could not allocate a short code, retry"
+ 
+@@ -55,7 +59,8 @@
+         raise AliasReserved()
+ 
+     for _ in range(1 if alias else MAX_CODE_ATTEMPTS):
+-        url = models.URL(short_code=alias or generate_code(), long_url=str(payload.long_url), expires_at=payload.expires_at)
++        url = models.URL(short_code=alias or generate_code(), long_url=str(payload.long_url), expires_at=payload.expires_at,
++                         max_clicks=payload.max_clicks)
+         db.add(url)
+         try:
+             db.commit()
+@@ -73,6 +78,7 @@
+             long_url=url.long_url,
+             created_at=url.created_at,
+             expires_at=url.expires_at,
++            max_clicks=url.max_clicks,
+         )
+     raise CodeGenerationExhausted()
+ 
+@@ -99,7 +105,16 @@
+     url = _get_url(db, code)
+     if url.expires_at and url.expires_at <= models.utcnow():
+         raise LinkExpired()
+-    long_url, url_id = url.long_url, url.id  # capture before commit expires the instance
++    long_url, url_id, limited = url.long_url, url.id, url.max_clicks is not None  # capture before commit expires the instance
++    if limited:
++        # Check and consume in one statement so concurrent redirects cannot overshoot the limit.
++        consumed = db.execute(update(models.URL)
++                              .where(models.URL.id == url_id, models.URL.click_count < models.URL.max_clicks)
++                              .values(click_count=models.URL.click_count + 1))
++        db.commit()
++        if consumed.rowcount == 0:
++            metrics.inc("click_limit_reached_total")
++            raise LinkExhausted()
+     record_click(db, url_id, referrer, user_agent)
+     metrics.inc("redirects_total")
+     return long_url
+@@ -125,6 +140,8 @@
+         created_at=url.created_at,
+         expires_at=url.expires_at,
+         last_accessed=last,
++        max_clicks=url.max_clicks,
++        remaining_clicks=None if url.max_clicks is None else max(url.max_clicks - url.click_count, 0),
+         recent_clicks=[schemas.ClickEvent(clicked_at=c.clicked_at, referrer=c.referrer, user_agent=c.user_agent) for c in recent],
+         clicks_by_day=[schemas.DayCount(day=str(d), clicks=c) for d, c in by_day],
+         top_referrers=[schemas.ReferrerCount(referrer=r, clicks=c) for r, c in refs],

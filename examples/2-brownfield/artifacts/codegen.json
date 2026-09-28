@@ -1,0 +1,57 @@
+{
+  "summary": "Per-link max_clicks: model columns, request/response fields, atomic enforcement, analytics",
+  "files": [],
+  "edits": [
+    {
+      "path": "app/models.py",
+      "find": "    expires_at = Column(DateTime, nullable=True)\n",
+      "replace": "    expires_at = Column(DateTime, nullable=True)\n    max_clicks = Column(Integer, nullable=True)  # NULL = unlimited\n    click_count = Column(Integer, nullable=False, default=0, server_default=\"0\")\n"
+    },
+    {
+      "path": "app/schemas.py",
+      "find": "    expires_at: Optional[datetime] = Field(None, description=\"ISO-8601; must be in the future. Naive values are treated as UTC.\")\n",
+      "replace": "    expires_at: Optional[datetime] = Field(None, description=\"ISO-8601; must be in the future. Naive values are treated as UTC.\")\n    max_clicks: Optional[int] = Field(None, ge=1, description=\"Redirect limit; unset means unlimited.\")\n"
+    },
+    {
+      "path": "app/schemas.py",
+      "find": "    created_at: datetime\n    expires_at: Optional[datetime] = None\n\n\nclass ClickEvent",
+      "replace": "    created_at: datetime\n    expires_at: Optional[datetime] = None\n    max_clicks: Optional[int] = None\n\n\nclass ClickEvent"
+    },
+    {
+      "path": "app/schemas.py",
+      "find": "    last_accessed: Optional[datetime] = None\n",
+      "replace": "    last_accessed: Optional[datetime] = None\n    max_clicks: Optional[int] = None\n    remaining_clicks: Optional[int] = None\n"
+    },
+    {
+      "path": "app/services.py",
+      "find": "from sqlalchemy import desc, func, select\n",
+      "replace": "from sqlalchemy import desc, func, select, update\n"
+    },
+    {
+      "path": "app/services.py",
+      "find": "class LinkExpired(ServiceError):\n    status_code, detail = 410, \"Short URL expired\"\n",
+      "replace": "class LinkExpired(ServiceError):\n    status_code, detail = 410, \"Short URL expired\"\n\n\nclass LinkExhausted(ServiceError):\n    status_code, detail = 410, \"Short URL click limit reached\"\n"
+    },
+    {
+      "path": "app/services.py",
+      "find": "long_url=str(payload.long_url), expires_at=payload.expires_at)",
+      "replace": "long_url=str(payload.long_url), expires_at=payload.expires_at,\n                         max_clicks=payload.max_clicks)"
+    },
+    {
+      "path": "app/services.py",
+      "find": "            expires_at=url.expires_at,\n        )\n",
+      "replace": "            expires_at=url.expires_at,\n            max_clicks=url.max_clicks,\n        )\n"
+    },
+    {
+      "path": "app/services.py",
+      "find": "    long_url, url_id = url.long_url, url.id  # capture before commit expires the instance\n",
+      "replace": "    long_url, url_id, limited = url.long_url, url.id, url.max_clicks is not None  # capture before commit expires the instance\n    if limited:\n        # Check and consume in one statement so concurrent redirects cannot overshoot the limit.\n        consumed = db.execute(update(models.URL)\n                              .where(models.URL.id == url_id, models.URL.click_count < models.URL.max_clicks)\n                              .values(click_count=models.URL.click_count + 1))\n        db.commit()\n        if consumed.rowcount == 0:\n            metrics.inc(\"click_limit_reached_total\")\n            raise LinkExhausted()\n"
+    },
+    {
+      "path": "app/services.py",
+      "find": "        last_accessed=last,\n",
+      "replace": "        last_accessed=last,\n        max_clicks=url.max_clicks,\n        remaining_clicks=None if url.max_clicks is None else max(url.max_clicks - url.click_count, 0),\n"
+    }
+  ],
+  "notes": []
+}

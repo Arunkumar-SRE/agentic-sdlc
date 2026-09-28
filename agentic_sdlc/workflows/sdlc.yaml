@@ -1,0 +1,145 @@
+# Requirement -> reviewable engineering outcome.
+# Adding an agent = add an entry here + a prompt under agents/prompts + a schema in agents/schemas.py.
+name: sdlc
+version: "2"
+description: >
+  Requirement understanding, (brownfield) impact analysis, planning, design, contract, parallel code/test/doc
+  generation, sandboxed build, verification with a bounded repair loop, risk review and a human-signed summary.
+engine: simple
+max_parallel: 4
+
+# Agents ask for a tier; this block decides which provider/model serves it. Override with --provider/--model.
+models:
+  fast:     {provider: offline, model: offline-reference-v1, max_tokens: 4096}
+  standard: {provider: offline, model: offline-reference-v1, max_tokens: 8192}
+  strong:   {provider: offline, model: offline-reference-v1, max_tokens: 32000}
+
+providers:
+  offline:
+    reference_dir: targets/url_shortener
+  anthropic:
+    api_key_env: ANTHROPIC_API_KEY
+    models: {fast: claude-haiku-4-5-20251001, standard: claude-sonnet-5, strong: claude-opus-5-5}
+
+budgets:
+  max_llm_calls: 40
+  max_tokens: 1500000
+  max_tool_calls: 60
+  max_seconds: 1800
+
+cache: true
+
+agents:
+  - id: requirements
+    description: Interpret intent, surface ambiguities, normalise into testable acceptance criteria
+    prompt: requirements.md
+    output_schema: RequirementSpec
+    tier: fast
+    retry: {max_attempts: 3, backoff_s: 0.2}
+    gate: {required: true, min_confidence: 0.6, summary_field: normalized}
+
+  - id: impact
+    description: Static analysis of the existing code, then model reasoning over it (brownfield only)
+    prompt: impact.md
+    output_schema: CodebaseImpact
+    tier: standard
+    depends_on: [requirements]
+    when: {path: requirements.change_type, in: [brownfield]}
+    context_tools:
+      analyze_codebase: {root: "{{ inputs.target_dir }}", requirement: "{{ requirement }}"}
+    retry: {max_attempts: 2, backoff_s: 0.2}
+    on_failure: fallback
+    fallback:
+      applicable: false
+      summary: Impact analysis unavailable; a reviewer must scope the change manually.
+
+  - id: plan
+    description: Dependency-ordered task plan (validated as a DAG)
+    prompt: plan.md
+    output_schema: TaskPlan
+    tier: standard
+    depends_on: [requirements, impact]
+    gate: {required: true}
+
+  - id: design
+    prompt: design.md
+    output_schema: DesignSpec
+    tier: strong
+    depends_on: [plan, impact]
+
+  - id: contract
+    description: OpenAPI + DDL; the single source of truth for code and tests
+    prompt: contract.md
+    output_schema: ApiContract
+    tier: standard
+    depends_on: [design]
+
+  - id: codegen
+    prompt: codegen.md
+    output_schema: CodeBundle
+    tier: strong
+    depends_on: [contract, impact]
+    retry: {max_attempts: 3, backoff_s: 0.5}
+
+  - id: testgen
+    description: Tests from the contract, in parallel with (and independent of) the implementation
+    prompt: testgen.md
+    output_schema: TestBundle
+    tier: standard
+    depends_on: [contract]
+
+  - id: docs
+    prompt: docs.md
+    output_schema: DocBundle
+    tier: fast
+    depends_on: [contract]
+    on_failure: fallback
+    fallback:
+      files: [{path: DOCS_TODO.md, content: "Documentation generation failed; see artifacts/engineering_summary.md."}]
+
+  - id: materialize
+    kind: tool
+    description: Build the project inside the sandboxed run workspace
+    tool: materialize
+    output_schema: MaterializeResult
+    depends_on: [codegen, testgen, docs]
+    args:
+      project_dir: project
+      mode: "{{ outputs.requirements.change_type }}"
+      base_dir: "{{ inputs.target_dir }}"
+      files: "{{ outputs.codegen.files }}"
+      edits: "{{ outputs.codegen.edits }}"
+      tests: "{{ outputs.testgen.files }}"
+      docs: "{{ outputs.docs.files }}"
+    retry: {max_attempts: 1}
+
+  - id: verify
+    kind: tool
+    description: Lint, contract drift, full test suite; failures re-open codegen with the findings
+    tool: verify
+    output_schema: VerificationReport
+    depends_on: [materialize]
+    args:
+      contract: "{{ outputs.contract.openapi }}"
+      project_dir: project
+      materialize_problems: "{{ outputs.materialize.problems }}"
+    retry: {max_attempts: 1}
+    feedback: {target: codegen, pass_field: passed, feedback_field: feedback, skip_field: environment_error, max_rounds: 2}
+
+  - id: risks
+    prompt: risks.md
+    output_schema: RiskRegister
+    tier: standard
+    depends_on: [verify, design]
+
+  - id: report
+    kind: tool
+    description: Deterministic engineering summary for human sign-off
+    tool: render_report
+    output_schema: SummaryReport
+    depends_on: [risks, docs, verify]
+    args:
+      requirement: "{{ requirement }}"
+      outputs: "{{ outputs }}"
+      run: "{{ run }}"
+    gate: {required: true, summary_field: path}

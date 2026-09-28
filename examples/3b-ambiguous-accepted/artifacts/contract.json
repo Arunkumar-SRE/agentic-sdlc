@@ -1,0 +1,315 @@
+{
+  "openapi": {
+    "openapi": "3.1.0",
+    "info": {
+      "title": "URL Shortener",
+      "version": "1.1.0"
+    },
+    "paths": {
+      "/api/v1/urls": {
+        "post": {
+          "summary": "Create short URL",
+          "operationId": "create_url",
+          "requestBody": {
+            "required": true,
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/URLCreate"
+                }
+              }
+            }
+          },
+          "responses": {
+            "201": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/URLResponse"
+                  }
+                }
+              }
+            },
+            "409": {
+              "description": "Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "422": {
+              "description": "Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "429": {
+              "description": "Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "503": {
+              "description": "Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/api/v1/urls/{short_code}/analytics": {
+        "get": {
+          "summary": "Click analytics",
+          "operationId": "analytics",
+          "parameters": [
+            {
+              "name": "short_code",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/AnalyticsResponse"
+                  }
+                }
+              }
+            },
+            "404": {
+              "description": "Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/{short_code}": {
+        "get": {
+          "summary": "Redirect",
+          "operationId": "redirect",
+          "parameters": [
+            {
+              "name": "short_code",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "302": {
+              "description": "Redirect to long URL"
+            },
+            "404": {
+              "description": "Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            },
+            "410": {
+              "description": "Error",
+              "content": {
+                "application/json": {
+                  "schema": {
+                    "$ref": "#/components/schemas/Error"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "/health": {
+        "get": {
+          "summary": "Liveness",
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/ready": {
+        "get": {
+          "summary": "Readiness",
+          "responses": {
+            "200": {
+              "description": "OK"
+            },
+            "503": {
+              "description": "DB unavailable"
+            }
+          }
+        }
+      },
+      "/metrics": {
+        "get": {
+          "summary": "Prometheus metrics",
+          "responses": {
+            "200": {
+              "description": "text/plain"
+            }
+          }
+        }
+      },
+      "/ops/golden-signals": {
+        "get": {
+          "summary": "Golden signals and SLO status",
+          "operationId": "golden_signals",
+          "responses": {
+            "200": {
+              "description": "Latency, traffic, errors, saturation, SLOs"
+            }
+          }
+        }
+      }
+    },
+    "components": {
+      "schemas": {
+        "URLCreate": {
+          "type": "object",
+          "required": [
+            "long_url"
+          ],
+          "properties": {
+            "long_url": {
+              "type": "string",
+              "format": "uri",
+              "minLength": 1,
+              "maxLength": 2083
+            },
+            "custom_alias": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 16,
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "nullable": true
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true,
+              "description": "Must be in the future"
+            }
+          }
+        },
+        "URLResponse": {
+          "type": "object",
+          "properties": {
+            "short_code": {
+              "type": "string"
+            },
+            "short_url": {
+              "type": "string"
+            },
+            "long_url": {
+              "type": "string"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            }
+          }
+        },
+        "AnalyticsResponse": {
+          "type": "object",
+          "properties": {
+            "short_code": {
+              "type": "string"
+            },
+            "long_url": {
+              "type": "string"
+            },
+            "total_clicks": {
+              "type": "integer"
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "expires_at": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "last_accessed": {
+              "type": "string",
+              "format": "date-time",
+              "nullable": true
+            },
+            "recent_clicks": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "clicks_by_day": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            },
+            "top_referrers": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "Error": {
+          "type": "object",
+          "properties": {
+            "detail": {}
+          }
+        }
+      }
+    }
+  },
+  "ddl": {
+    "sqlite": "CREATE TABLE urls (\n    id           INTEGER PRIMARY KEY AUTOINCREMENT,\n    short_code   VARCHAR(16) NOT NULL UNIQUE,\n    long_url     TEXT NOT NULL,\n    created_at   DATETIME NOT NULL,\n    expires_at   DATETIME NULL\n);\nCREATE TABLE clicks (\n    id           INTEGER PRIMARY KEY AUTOINCREMENT,\n    url_id       INTEGER NOT NULL REFERENCES urls(id),\n    clicked_at   DATETIME NOT NULL,\n    referrer     VARCHAR(512) NULL,\n    user_agent   VARCHAR(512) NULL\n);\nCREATE INDEX ix_clicks_url_id_clicked_at ON clicks (url_id, clicked_at);",
+    "postgresql": "CREATE TABLE urls (\n    id           SERIAL PRIMARY KEY,\n    short_code   VARCHAR(16) NOT NULL UNIQUE,\n    long_url     TEXT NOT NULL,\n    created_at   TIMESTAMP NOT NULL,\n    expires_at   TIMESTAMP NULL\n);\nCREATE TABLE clicks (\n    id           SERIAL PRIMARY KEY,\n    url_id       INTEGER NOT NULL REFERENCES urls(id),\n    clicked_at   TIMESTAMP NOT NULL,\n    referrer     VARCHAR(512) NULL,\n    user_agent   VARCHAR(512) NULL\n);\nCREATE INDEX ix_clicks_url_id_clicked_at ON clicks (url_id, clicked_at);"
+  },
+  "compatibility_notes": [
+    "Additive only: every new field is optional; no path, method or existing field changed"
+  ]
+}

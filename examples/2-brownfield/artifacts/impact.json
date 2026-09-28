@@ -1,0 +1,164 @@
+{
+  "applicable": true,
+  "summary": "Scanned 9 modules, 10 routes, 2 ORM models. 5 module(s) impacted; 1 test file(s) to update.",
+  "impacted_modules": [
+    {
+      "path": "app/ops.py",
+      "role": "route layer",
+      "reason": "identifiers match click, redirect (score 12.21)",
+      "symbols": [
+        "chaos_before_redirect"
+      ]
+    },
+    {
+      "path": "app/services.py",
+      "role": "business logic",
+      "reason": "identifiers match analytic, click, redirect (score 11.54)",
+      "symbols": [
+        "get_analytics",
+        "record_click"
+      ]
+    },
+    {
+      "path": "app/main.py",
+      "role": "route layer",
+      "reason": "identifiers match analytic, redirect (score 8.64)",
+      "symbols": [
+        "analytics",
+        "redirect"
+      ]
+    },
+    {
+      "path": "app/schemas.py",
+      "role": "schema / DTO",
+      "reason": "identifiers match analytic, click (score 6.49)",
+      "symbols": [
+        "AnalyticsResponse",
+        "ClickEvent"
+      ]
+    },
+    {
+      "path": "app/models.py",
+      "role": "data model",
+      "reason": "identifiers match click (score 4.43)",
+      "symbols": [
+        "Click"
+      ]
+    }
+  ],
+  "flows": [
+    {
+      "entrypoint": "GET /",
+      "chain": [
+        "main.root"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /favicon.ico",
+      "chain": [
+        "main.favicon"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /health",
+      "chain": [
+        "main.health"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /ready",
+      "chain": [
+        "main.ready"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /metrics",
+      "chain": [
+        "main.prometheus_metrics",
+        "metrics.render"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "POST /api/v1/urls",
+      "chain": [
+        "main.create_url",
+        "services.create_short_url",
+        "services.generate_code",
+        "metrics.inc",
+        "metrics._fmt"
+      ],
+      "models": [
+        "models.URL(urls)"
+      ]
+    },
+    {
+      "entrypoint": "GET /api/v1/urls/{short_code}/analytics",
+      "chain": [
+        "main.analytics",
+        "services.get_analytics",
+        "services._get_url"
+      ],
+      "models": [
+        "models.Click(clicks)",
+        "models.URL(urls)"
+      ]
+    },
+    {
+      "entrypoint": "GET /{short_code}",
+      "chain": [
+        "main.redirect",
+        "ops.chaos_before_redirect",
+        "services.resolve_url",
+        "services._get_url",
+        "metrics.inc",
+        "models.utcnow",
+        "services.record_click",
+        "metrics._fmt"
+      ],
+      "models": [
+        "models.Click(clicks)",
+        "models.URL(urls)"
+      ]
+    },
+    {
+      "entrypoint": "GET /ops/golden-signals",
+      "chain": [
+        "ops.golden_signals_endpoint",
+        "ops.golden_signals",
+        "ops._budget",
+        "ops._latency",
+        "ops._pool",
+        "metrics.counter",
+        "metrics.in_flight",
+        "metrics.uptime_seconds",
+        "metrics.window",
+        "ops._percentile"
+      ],
+      "models": []
+    },
+    {
+      "entrypoint": "GET /ops/dashboard",
+      "chain": [
+        "ops.dashboard"
+      ],
+      "models": []
+    }
+  ],
+  "data_flow_notes": [
+    "Redirect path: route -> services.resolve_url -> services.record_click (click insert is best-effort)",
+    "Create path: route -> services.create_short_url (UNIQUE constraint + retry, no check-then-insert)",
+    "A click limit must be enforced atomically in resolve_url, before record_click, or concurrent redirects overshoot"
+  ],
+  "tests_to_update": [
+    "tests/test_api.py"
+  ],
+  "risks": [
+    "Concurrency: a read-then-write click counter can exceed max_clicks under parallel redirects",
+    "Schema change on urls needs a migration for existing rows (nullable / server default)"
+  ]
+}

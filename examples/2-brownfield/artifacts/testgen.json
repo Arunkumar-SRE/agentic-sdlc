@@ -1,0 +1,33 @@
+{
+  "strategy": {
+    "contract": [
+      "Every operation in the agreed OpenAPI is served",
+      "Create accepts every contract field"
+    ],
+    "regression": [
+      "The pre-existing suite is copied with the repository and must still pass"
+    ],
+    "new behaviour": [
+      "N redirects then 410",
+      "remaining_clicks in analytics",
+      "unset = unlimited",
+      "max_clicks >= 1"
+    ]
+  },
+  "files": [
+    {
+      "path": "tests/test_contract.py",
+      "content": "\"\"\"Generated from the agreed API contract: fails on contract drift.\"\"\"\nfrom app.main import app\n\nCONTRACT_OPERATIONS = {\n    \"/api/v1/urls\": [\n        \"post\"\n    ],\n    \"/api/v1/urls/{short_code}/analytics\": [\n        \"get\"\n    ],\n    \"/health\": [\n        \"get\"\n    ],\n    \"/metrics\": [\n        \"get\"\n    ],\n    \"/ops/golden-signals\": [\n        \"get\"\n    ],\n    \"/ready\": [\n        \"get\"\n    ],\n    \"/{short_code}\": [\n        \"get\"\n    ]\n}\nCREATE_FIELDS = [\"custom_alias\", \"expires_at\", \"long_url\", \"max_clicks\"]\n\n\ndef test_every_contract_operation_is_served():\n    served = app.openapi()[\"paths\"]\n    missing = [f\"{m.upper()} {p}\" for p, methods in CONTRACT_OPERATIONS.items() for m in methods if m not in served.get(p, {})]\n    assert not missing, missing\n\n\ndef test_create_request_accepts_contract_fields():\n    props = app.openapi()[\"components\"][\"schemas\"][\"URLCreate\"][\"properties\"]\n    assert set(CREATE_FIELDS) <= set(props), set(CREATE_FIELDS) - set(props)\n"
+    },
+    {
+      "path": "tests/test_max_clicks.py",
+      "content": "\"\"\"Generated for the max_clicks enhancement.\"\"\"\nURL = \"https://example.com/limited\"\n\n\ndef create(client, **extra):\n    return client.post(\"/api/v1/urls\", json={\"long_url\": URL, **extra})\n\n\ndef test_limit_enforced_then_410(client):\n    r = create(client, max_clicks=2)\n    assert r.status_code == 201 and r.json()[\"max_clicks\"] == 2\n    code = r.json()[\"short_code\"]\n    statuses = [client.get(f\"/{code}\", follow_redirects=False).status_code for _ in range(3)]\n    assert statuses == [302, 302, 410]\n\n\ndef test_analytics_reports_remaining_clicks(client):\n    code = create(client, max_clicks=3).json()[\"short_code\"]\n    client.get(f\"/{code}\", follow_redirects=False)\n    a = client.get(f\"/api/v1/urls/{code}/analytics\").json()\n    assert a[\"total_clicks\"] == 1 and a[\"max_clicks\"] == 3 and a[\"remaining_clicks\"] == 2\n\n\ndef test_unlimited_by_default_is_backward_compatible(client):\n    r = create(client)\n    assert r.status_code == 201 and r.json()[\"max_clicks\"] is None\n    code = r.json()[\"short_code\"]\n    assert all(client.get(f\"/{code}\", follow_redirects=False).status_code == 302 for _ in range(5))\n    assert client.get(f\"/api/v1/urls/{code}/analytics\").json()[\"remaining_clicks\"] is None\n\n\ndef test_max_clicks_must_be_positive(client):\n    assert create(client, max_clicks=0).status_code == 422\n"
+    }
+  ],
+  "covers_acceptance": [
+    "GET /{code} returns 302 to the long URL; unknown code returns 404",
+    "GET /api/v1/urls/{code}/analytics reports total clicks, last access, clicks by day and top referrers",
+    "A link with max_clicks=N redirects N times, then returns 410; analytics shows remaining clicks",
+    "All pre-existing tests still pass (no regression) and existing API fields are unchanged"
+  ]
+}

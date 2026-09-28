@@ -1,0 +1,8 @@
+{
+  "summary": "No code change produced",
+  "files": [],
+  "edits": [],
+  "notes": [
+    "The offline reference provider only synthesises code for URL-shortener requirements it recognises (greenfield service, max_clicks). Run with --provider anthropic for other changes; the plan, impact analysis and design above still apply."
+  ]
+}

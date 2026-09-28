@@ -1,0 +1,12 @@
+# Framework (the orchestration core)
+pydantic>=2.6,<3
+PyYAML>=6
+structlog>=24
+# Optional: real model provider (--provider anthropic)
+anthropic>=0.40
+# Generated service + verification (the workflow builds and tests a FastAPI/SQLAlchemy service)
+fastapi>=0.115
+sqlalchemy>=2.0
+httpx>=0.27
+uvicorn>=0.30
+pytest>=8

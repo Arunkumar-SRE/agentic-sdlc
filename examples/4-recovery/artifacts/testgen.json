@@ -1,0 +1,44 @@
+{
+  "strategy": {
+    "contract": [
+      "Every operation in the agreed OpenAPI is served",
+      "Create accepts every contract field"
+    ],
+    "unit/service": [
+      "Alias and expiry validation incl. timezone-aware input",
+      "Collision retry and exhaustion (503)",
+      "Click-write failure does not break the redirect",
+      "Rate limit returns 429"
+    ],
+    "integration": [
+      "Create -> redirect -> analytics through the ASGI app with an isolated in-memory DB",
+      "404 / 409 / 410 / 422 semantics",
+      "Health, readiness, metrics, request id"
+    ]
+  },
+  "files": [
+    {
+      "path": "tests/test_contract.py",
+      "content": "\"\"\"Generated from the agreed API contract: fails on contract drift.\"\"\"\nfrom app.main import app\n\nCONTRACT_OPERATIONS = {\n    \"/api/v1/urls\": [\n        \"post\"\n    ],\n    \"/api/v1/urls/{short_code}/analytics\": [\n        \"get\"\n    ],\n    \"/health\": [\n        \"get\"\n    ],\n    \"/metrics\": [\n        \"get\"\n    ],\n    \"/ops/golden-signals\": [\n        \"get\"\n    ],\n    \"/ready\": [\n        \"get\"\n    ],\n    \"/{short_code}\": [\n        \"get\"\n    ]\n}\nCREATE_FIELDS = [\"custom_alias\", \"expires_at\", \"long_url\"]\n\n\ndef test_every_contract_operation_is_served():\n    served = app.openapi()[\"paths\"]\n    missing = [f\"{m.upper()} {p}\" for p, methods in CONTRACT_OPERATIONS.items() for m in methods if m not in served.get(p, {})]\n    assert not missing, missing\n\n\ndef test_create_request_accepts_contract_fields():\n    props = app.openapi()[\"components\"][\"schemas\"][\"URLCreate\"][\"properties\"]\n    assert set(CREATE_FIELDS) <= set(props), set(CREATE_FIELDS) - set(props)\n"
+    },
+    {
+      "path": "tests/__init__.py",
+      "content": ""
+    },
+    {
+      "path": "tests/conftest.py",
+      "content": "import pytest\nfrom fastapi.testclient import TestClient\nfrom sqlalchemy import create_engine\nfrom sqlalchemy.orm import sessionmaker\nfrom sqlalchemy.pool import StaticPool\n\nfrom app import main, metrics\nfrom app.database import Base, get_db\n\n\n@pytest.fixture()\ndef session_factory():\n    engine = create_engine(\"sqlite://\", connect_args={\"check_same_thread\": False}, poolclass=StaticPool)\n    Base.metadata.create_all(engine)\n    yield sessionmaker(bind=engine, autoflush=False)\n    engine.dispose()\n\n\n@pytest.fixture()\ndef client(session_factory):\n    def override():\n        db = session_factory()\n        try:\n            yield db\n        finally:\n            db.close()\n\n    main.app.dependency_overrides[get_db] = override\n    main.limiter.limit = 0  # disabled unless a test enables it\n    main.limiter.reset()\n    metrics.reset()\n    yield TestClient(main.app)\n    main.app.dependency_overrides.clear()\n"
+    },
+    {
+      "path": "tests/test_api.py",
+      "content": "from datetime import datetime, timedelta, timezone\n\nfrom app import main, models, services\n\nURL = \"https://example.com/some/long/path\"\n\n\ndef create(client, **extra):\n    return client.post(\"/api/v1/urls\", json={\"long_url\": URL, **extra})\n\n\ndef test_create_redirect_and_analytics(client):\n    r = create(client)\n    assert r.status_code == 201\n    code = r.json()[\"short_code\"]\n    assert len(code) == services.CODE_LENGTH and r.json()[\"short_url\"].endswith(f\"/{code}\")\n\n    hit = client.get(f\"/{code}\", follow_redirects=False, headers={\"referer\": \"https://news.example\", \"user-agent\": \"pytest\"})\n    assert hit.status_code == 302 and hit.headers[\"location\"] == URL and hit.headers[\"cache-control\"] == \"no-store\"\n    client.get(f\"/{code}\", follow_redirects=False, headers={\"referer\": \"https://news.example\"})\n\n    a = client.get(f\"/api/v1/urls/{code}/analytics\").json()\n    assert a[\"total_clicks\"] == 2 and a[\"last_accessed\"] is not None\n    assert a[\"top_referrers\"] == [{\"referrer\": \"https://news.example\", \"clicks\": 2}]\n    assert sum(d[\"clicks\"] for d in a[\"clicks_by_day\"]) == 2 and len(a[\"recent_clicks\"]) == 2\n\n\ndef test_unknown_code_404_for_redirect_and_analytics(client):\n    assert client.get(\"/doesnotexist\", follow_redirects=False).status_code == 404\n    assert client.get(\"/api/v1/urls/doesnotexist/analytics\").status_code == 404\n\n\ndef test_invalid_inputs_rejected(client):\n    assert client.post(\"/api/v1/urls\", json={\"long_url\": \"not-a-url\"}).status_code == 422\n    assert client.post(\"/api/v1/urls\", json={\"long_url\": \"javascript:alert(1)\"}).status_code == 422\n    assert create(client, custom_alias=\"a b!\").status_code == 422\n    assert create(client, custom_alias=\"ab\").status_code == 422\n\n\ndef test_custom_alias_conflict_409(client):\n    assert create(client, custom_alias=\"promo\").status_code == 201\n    assert create(client, custom_alias=\"promo\").status_code == 409\n\n\ndef test_reserved_alias_rejected(client):\n    assert create(client, custom_alias=\"docs\").status_code == 422\n    assert create(client, custom_alias=\"Health\").status_code == 422\n\n\ndef test_expiry_in_past_rejected_and_tz_aware_accepted(client):\n    past = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()\n    assert create(client, expires_at=past).status_code == 422\n    future = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()  # tz-aware must not 500\n    assert create(client, expires_at=future).status_code == 201\n\n\ndef test_expired_link_returns_410(client, session_factory):\n    code = create(client).json()[\"short_code\"]\n    with session_factory() as db:\n        db.query(models.URL).update({\"expires_at\": models.utcnow() - timedelta(seconds=5)})\n        db.commit()\n    assert client.get(f\"/{code}\", follow_redirects=False).status_code == 410\n\n\ndef test_code_collision_is_retried(client, monkeypatch):\n    create(client, custom_alias=\"taken12\")\n    codes = iter([\"taken12\", \"taken12\", \"fresh99\"])\n    monkeypatch.setattr(services, \"generate_code\", lambda length=7: next(codes))\n    assert create(client).json()[\"short_code\"] == \"fresh99\"\n\n\ndef test_collision_exhaustion_returns_503(client, monkeypatch):\n    create(client, custom_alias=\"taken12\")\n    monkeypatch.setattr(services, \"generate_code\", lambda length=7: \"taken12\")\n    assert create(client).status_code == 503\n\n\ndef test_redirect_survives_click_write_failure(client, monkeypatch):\n    code = create(client).json()[\"short_code\"]\n    from sqlalchemy.orm import Session\n    from sqlalchemy.exc import OperationalError\n\n    real_commit = Session.commit\n    state = {\"n\": 0}\n\n    def flaky_commit(self):\n        state[\"n\"] += 1\n        raise OperationalError(\"insert\", {}, Exception(\"db down\"))\n\n    monkeypatch.setattr(Session, \"commit\", flaky_commit)\n    resp = client.get(f\"/{code}\", follow_redirects=False)\n    monkeypatch.setattr(Session, \"commit\", real_commit)\n    assert resp.status_code == 302  # analytics failure did not break the redirect\n    assert \"click_write_failures_total 1\" in client.get(\"/metrics\").text\n\n\ndef test_rate_limit_returns_429(client):\n    main.limiter.limit = 2\n    assert [create(client).status_code for _ in range(3)] == [201, 201, 429]\n\n\ndef test_health_ready_metrics_and_request_id(client):\n    assert client.get(\"/health\").json() == {\"status\": \"ok\"}\n    assert client.get(\"/\", follow_redirects=False).headers[\"location\"] == \"/docs\"  # landing page, not a 404\n    assert client.get(\"/favicon.ico\").status_code == 204  # browser icon request is not an unknown short code\n    g = client.get(\"/ops/golden-signals?window=60\").json()  # golden signals: latency, traffic, errors, saturation\n    assert {\"latency\", \"traffic\", \"errors\", \"saturation\", \"slos\"} <= set(g) and g[\"traffic\"][\"requests\"] >= 1\n    assert client.get(\"/ops/dashboard\").headers[\"content-type\"].startswith(\"text/html\")\n    assert client.get(\"/ready\").json() == {\"status\": \"ready\"}\n    r = create(client)\n    assert r.headers[\"x-request-id\"]\n    text = client.get(\"/metrics\").text\n    assert 'http_requests_total{method=\"POST\",route=\"/api/v1/urls\",status=\"201\"} 1' in text\n    assert \"urls_created_total 1\" in text\n"
+    }
+  ],
+  "covers_acceptance": [
+    "POST /api/v1/urls returns 201 with a short_code; malformed or non-http(s) URLs return 422",
+    "GET /{code} returns 302 to the long URL; unknown code returns 404",
+    "Links and clicks are stored in a relational database with a UNIQUE short_code",
+    "GET /api/v1/urls/{code}/analytics reports total clicks, last access, clicks by day and top referrers",
+    "API is stateless; lookups use an indexed unique key; the path to Postgres, caching and async analytics is documented"
+  ]
+}

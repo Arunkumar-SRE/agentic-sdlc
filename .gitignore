@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.cache/
+.venv/
+workspace/*
+!workspace/.gitkeep
+logs/*
+!logs/.gitkeep
+*.db
+.pytest-report.xml
+.mypy_cache/
+.ruff_cache/
+reports/
+loadtest.db*
+demo.db*
+*.db-wal
+*.db-shm

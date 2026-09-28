@@ -1,0 +1,22 @@
+{
+  "strategy": {
+    "contract": [
+      "Every operation in the agreed OpenAPI is served",
+      "Create accepts every contract field"
+    ],
+    "regression": [
+      "The pre-existing suite is copied with the repository and must still pass"
+    ]
+  },
+  "files": [
+    {
+      "path": "tests/test_contract.py",
+      "content": "\"\"\"Generated from the agreed API contract: fails on contract drift.\"\"\"\nfrom app.main import app\n\nCONTRACT_OPERATIONS = {\n    \"/api/v1/urls\": [\n        \"post\"\n    ],\n    \"/api/v1/urls/{short_code}/analytics\": [\n        \"get\"\n    ],\n    \"/health\": [\n        \"get\"\n    ],\n    \"/metrics\": [\n        \"get\"\n    ],\n    \"/ops/golden-signals\": [\n        \"get\"\n    ],\n    \"/ready\": [\n        \"get\"\n    ],\n    \"/{short_code}\": [\n        \"get\"\n    ]\n}\nCREATE_FIELDS = [\"custom_alias\", \"expires_at\", \"long_url\"]\n\n\ndef test_every_contract_operation_is_served():\n    served = app.openapi()[\"paths\"]\n    missing = [f\"{m.upper()} {p}\" for p, methods in CONTRACT_OPERATIONS.items() for m in methods if m not in served.get(p, {})]\n    assert not missing, missing\n\n\ndef test_create_request_accepts_contract_fields():\n    props = app.openapi()[\"components\"][\"schemas\"][\"URLCreate\"][\"properties\"]\n    assert set(CREATE_FIELDS) <= set(props), set(CREATE_FIELDS) - set(props)\n"
+    }
+  ],
+  "covers_acceptance": [
+    "GET /api/v1/urls/{code}/analytics reports total clicks, last access, clicks by day and top referrers",
+    "A link past expires_at returns 410",
+    "All pre-existing tests still pass (no regression) and existing API fields are unchanged"
+  ]
+}

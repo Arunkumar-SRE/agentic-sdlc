@@ -1,0 +1,11 @@
+{
+  "project_dir": "project",
+  "written": [
+    "CHANGELOG.md",
+    "docs/SERVICE.md",
+    "tests/test_contract.py"
+  ],
+  "edited": [],
+  "base": "/home/claude/proj/targets/url_shortener",
+  "problems": []
+}

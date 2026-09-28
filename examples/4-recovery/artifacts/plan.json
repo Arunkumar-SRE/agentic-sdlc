@@ -1,0 +1,156 @@
+{
+  "template": "greenfield-feature",
+  "rationale": "Contract first: the API contract and DDL are fixed before code, so implementation and tests can be produced in parallel from the same source of truth and verification can detect drift. Tests are written from the contract, not from the implementation, so they catch implementation bugs instead of encoding them.",
+  "tasks": [
+    {
+      "id": "T1",
+      "title": "Design architecture and data model",
+      "owner_step": "design",
+      "depends_on": [],
+      "deliverable": "Design doc, decisions, SLOs",
+      "acceptance": "Every goal maps to a component"
+    },
+    {
+      "id": "T2",
+      "title": "Define API contract and DDL",
+      "owner_step": "contract",
+      "depends_on": [
+        "T1"
+      ],
+      "deliverable": "OpenAPI 3 + SQLite/Postgres DDL",
+      "acceptance": "Every endpoint in the design is in the contract"
+    },
+    {
+      "id": "T3",
+      "title": "Implement persistence layer",
+      "owner_step": "codegen",
+      "depends_on": [
+        "T2"
+      ],
+      "deliverable": "ORM models, UNIQUE short_code, click index",
+      "acceptance": "Tables match the DDL"
+    },
+    {
+      "id": "T4",
+      "title": "Implement service layer and routes",
+      "owner_step": "codegen",
+      "depends_on": [
+        "T3"
+      ],
+      "deliverable": "Create, redirect, error mapping",
+      "acceptance": "Served OpenAPI matches the contract"
+    },
+    {
+      "id": "T5",
+      "title": "Implement click analytics",
+      "owner_step": "codegen",
+      "depends_on": [
+        "T4"
+      ],
+      "deliverable": "Click capture + aggregates endpoint",
+      "acceptance": "Analytics acceptance criteria pass"
+    },
+    {
+      "id": "T6",
+      "title": "Add operability guardrails",
+      "owner_step": "codegen",
+      "depends_on": [
+        "T4"
+      ],
+      "deliverable": "health/ready/metrics, rate limit, JSON logs",
+      "acceptance": "Probes and metrics respond"
+    },
+    {
+      "id": "T7",
+      "title": "Write unit, integration and contract tests from the contract",
+      "owner_step": "testgen",
+      "depends_on": [
+        "T2"
+      ],
+      "deliverable": "pytest suites",
+      "acceptance": "Every acceptance criterion has a test"
+    },
+    {
+      "id": "T8",
+      "title": "Write service documentation",
+      "owner_step": "docs",
+      "depends_on": [
+        "T2"
+      ],
+      "deliverable": "README with API and run instructions",
+      "acceptance": "Docs list every endpoint"
+    },
+    {
+      "id": "T9",
+      "title": "Verify: lint, contract drift, test suite",
+      "owner_step": "verify",
+      "depends_on": [
+        "T5",
+        "T6",
+        "T7"
+      ],
+      "deliverable": "Verification report",
+      "acceptance": "All checks pass (repair loop on failure)"
+    },
+    {
+      "id": "T10",
+      "title": "Risk review and validation strategy",
+      "owner_step": "risks",
+      "depends_on": [
+        "T9"
+      ],
+      "deliverable": "Risk register",
+      "acceptance": "Every risk has a mitigation or is accepted"
+    },
+    {
+      "id": "T11",
+      "title": "Engineering summary for human sign-off",
+      "owner_step": "report",
+      "depends_on": [
+        "T8",
+        "T10"
+      ],
+      "deliverable": "engineering_summary.md",
+      "acceptance": "Reviewer approves"
+    }
+  ],
+  "execution_levels": [
+    [
+      "T1"
+    ],
+    [
+      "T2"
+    ],
+    [
+      "T3",
+      "T7",
+      "T8"
+    ],
+    [
+      "T4"
+    ],
+    [
+      "T5",
+      "T6"
+    ],
+    [
+      "T9"
+    ],
+    [
+      "T10"
+    ],
+    [
+      "T11"
+    ]
+  ],
+  "critical_path": [
+    "T1",
+    "T2",
+    "T3",
+    "T4",
+    "T5",
+    "T9",
+    "T10",
+    "T11"
+  ]
+}

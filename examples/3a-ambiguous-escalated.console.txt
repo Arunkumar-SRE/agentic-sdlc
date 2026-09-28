@@ -1,0 +1,23 @@
+2026-09-28T15:28:03.182081Z [info     ] run_started                    engine=simple provider='per-tier config' resume=False run_id=ex-3a-ambiguous-escalated workflow=sdlc
+2026-09-28T15:28:03.187156Z [info     ] step_started                   round=0 run_id=ex-3a-ambiguous-escalated step=requirements
+2026-09-28T15:28:03.198768Z [info     ] step_succeeded                 attempts=1 run_id=ex-3a-ambiguous-escalated seconds=0.01 step=requirements
+2026-09-28T15:28:03.198981Z [info     ] gate_decision                  approved=False reason=low_confidence reviewer=auto run_id=ex-3a-ambiguous-escalated step=requirements
+2026-09-28T15:28:03.199066Z [error    ] run_halted                     reason="gate 'requirements' not approved (low_confidence): escalated: confidence 0.26 below 0.6; a human must clarify (or re-run with --accept-assumptions)" run_id=ex-3a-ambiguous-escalated status=halted
+2026-09-28T15:28:03.200241Z [info     ] run_finished                   reason="gate 'requirements' not approved (low_confidence): escalated: confidence 0.26 below 0.6; a human must clarify (or re-run with --accept-assumptions)" run_id=ex-3a-ambiguous-escalated status=halted
+
+run ex-3a-ambiguous-escalated: HALTED (gate 'requirements' not approved (low_confidence): escalated: confidence 0.26 below 0.6; a human must clarify (or re-run with --accept-assumptions))
+  requirements failed     attempts=1  not approved at gate: escalated: confidence 0.26 below 0.6; a human must clarify (or re-ru
+  impact       pending    attempts=0
+  plan         pending    attempts=0
+  design       pending    attempts=0
+  contract     pending    attempts=0
+  codegen      pending    attempts=0
+  testgen      pending    attempts=0
+  docs         pending    attempts=0
+  materialize  pending    attempts=0
+  verify       pending    attempts=0
+  risks        pending    attempts=0
+  report       pending    attempts=0
+usage: 1 model calls (0 cached), 0 tool calls, 0.03 s
+workspace: workspace/ex-3a-ambiguous-escalated
+exit code: 2

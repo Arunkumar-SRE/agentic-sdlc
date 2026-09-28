@@ -1,0 +1,49 @@
+2026-09-28T15:27:57.142421Z [info     ] run_started                    engine=simple provider='per-tier config' resume=False run_id=ex-1-greenfield workflow=sdlc
+2026-09-28T15:27:57.152948Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=requirements
+2026-09-28T15:27:57.173267Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.02 step=requirements
+2026-09-28T15:27:57.173756Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-1-greenfield step=requirements
+2026-09-28T15:27:57.175170Z [info     ] step_skipped                   condition={'path': 'requirements.change_type', 'in': ['brownfield'], 'negate': False} run_id=ex-1-greenfield step=impact
+2026-09-28T15:27:57.176183Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=plan
+2026-09-28T15:27:57.178902Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.0 step=plan
+2026-09-28T15:27:57.179529Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-1-greenfield step=plan
+2026-09-28T15:27:57.182099Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=design
+2026-09-28T15:27:57.185392Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.0 step=design
+2026-09-28T15:27:57.187427Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=contract
+2026-09-28T15:27:57.190696Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.0 step=contract
+2026-09-28T15:27:57.192750Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=codegen
+2026-09-28T15:27:57.200831Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=testgen
+2026-09-28T15:27:57.207511Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=docs
+2026-09-28T15:27:57.221064Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.01 step=testgen
+2026-09-28T15:27:57.222479Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.03 step=codegen
+2026-09-28T15:27:57.223476Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.01 step=docs
+2026-09-28T15:27:57.225201Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=materialize
+2026-09-28T15:27:57.227618Z [info     ] tool_call                      agent=materialize ms=2.1 run_id=ex-1-greenfield side_effects=write tool=materialize
+2026-09-28T15:27:57.228410Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.0 step=materialize
+2026-09-28T15:27:57.230740Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=verify
+2026-09-28T15:27:59.727933Z [info     ] tool_call                      agent=verify ms=2496.6 run_id=ex-1-greenfield side_effects=exec tool=verify
+2026-09-28T15:27:59.728947Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=2.5 step=verify
+2026-09-28T15:27:59.731391Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=risks
+2026-09-28T15:27:59.736707Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.0 step=risks
+2026-09-28T15:27:59.738928Z [info     ] step_started                   round=0 run_id=ex-1-greenfield step=report
+2026-09-28T15:27:59.741862Z [info     ] tool_call                      agent=report ms=2.4 run_id=ex-1-greenfield side_effects=write tool=render_report
+2026-09-28T15:27:59.742392Z [info     ] step_succeeded                 attempts=1 run_id=ex-1-greenfield seconds=0.0 step=report
+2026-09-28T15:27:59.742541Z [info     ] gate_decision                  approved=True reason=gate reviewer=auto run_id=ex-1-greenfield step=report
+2026-09-28T15:27:59.745667Z [info     ] run_finished                   reason=None run_id=ex-1-greenfield status=succeeded
+
+run ex-1-greenfield: SUCCEEDED
+  requirements succeeded  attempts=1
+  impact       skipped    attempts=0
+  plan         succeeded  attempts=1
+  design       succeeded  attempts=1
+  contract     succeeded  attempts=1
+  codegen      succeeded  attempts=1
+  testgen      succeeded  attempts=1
+  docs         succeeded  attempts=1
+  materialize  succeeded  attempts=1
+  verify       succeeded  attempts=1
+  risks        succeeded  attempts=1
+  report       succeeded  attempts=1
+usage: 8 model calls (0 cached), 3 tool calls, 2.63 s
+workspace: workspace/ex-1-greenfield
+summary:   workspace/ex-1-greenfield/artifacts/engineering_summary.md
+exit code: 0

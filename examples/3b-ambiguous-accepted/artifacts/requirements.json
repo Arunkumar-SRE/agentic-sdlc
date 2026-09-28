@@ -1,0 +1,41 @@
+{
+  "original": "Make links better and track stuff.",
+  "change_type": "brownfield",
+  "intent": "feature",
+  "clarity": "ambiguous",
+  "normalized": "Under stated assumptions: Total clicks, last access, recent clicks, clicks per day and top referrers; no geo or device data; Interpret as link expiry plus click analytics; anything else is out of scope until clarified.",
+  "goals": [
+    "Record and expose click analytics",
+    "Support link expiry"
+  ],
+  "acceptance_criteria": [
+    "GET /api/v1/urls/{code}/analytics reports total clicks, last access, clicks by day and top referrers",
+    "A link past expires_at returns 410",
+    "All pre-existing tests still pass (no regression) and existing API fields are unchanged"
+  ],
+  "ambiguities": [
+    {
+      "topic": "analytics dimensions",
+      "question": "Which analytics: totals, referrers, geo, devices, time series?",
+      "assumption": "Total clicks, last access, recent clicks, clicks per day and top referrers; no geo or device data"
+    },
+    {
+      "topic": "scope",
+      "question": "Which outcomes define \"better\": expiry, analytics, QR codes, custom domains, performance?",
+      "assumption": "Interpret as link expiry plus click analytics; anything else is out of scope until clarified"
+    }
+  ],
+  "assumptions": [
+    "Total clicks, last access, recent clicks, clicks per day and top referrers; no geo or device data",
+    "Interpret as link expiry plus click analytics; anything else is out of scope until clarified",
+    "Single region",
+    "No authentication in the prototype; creation is rate-limited"
+  ],
+  "out_of_scope": [
+    "Authentication and multi-tenancy",
+    "Malicious-URL scanning",
+    "Custom domains"
+  ],
+  "keywords": [],
+  "confidence": 0.26
+}
